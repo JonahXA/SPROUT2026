@@ -67,6 +67,19 @@ export async function getCurrentUser() {
 }
 
 /**
+ * Safe version of getCurrentUser — returns null instead of throwing when
+ * the user is not authenticated. Use this in lesson pages so unauthenticated
+ * users see the page rather than being bounced to Login.
+ */
+export async function getCurrentUserSafe() {
+  try {
+    return await getCurrentUser();
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Update current user's profile fields
  */
 export async function updateCurrentUserProfile(patch) {

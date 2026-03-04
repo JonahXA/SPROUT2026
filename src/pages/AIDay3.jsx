@@ -23,7 +23,7 @@ export default function AIDay3() {
         const currentUser = await dataClient.auth.me();
         setUser(currentUser);
       } catch (error) {
-        navigate(createPageUrl("Login"));
+        console.error("Error loading user:", error);
       }
     };
     loadUser();

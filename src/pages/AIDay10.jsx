@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ChevronRight, Award, CheckCircle, Brain } from "lucide-react";
 import InteractiveQuiz from "@/components/InteractiveQuiz";
 
-import { getCurrentUser, getAIDayProgress, upsertAIDayProgress } from "@/lib/appClient";
+import { getCurrentUserSafe, getAIDayProgress, upsertAIDayProgress } from "@/lib/appClient";
 
 export default function AIDay10() {
   const navigate = useNavigate();
@@ -21,10 +21,10 @@ export default function AIDay10() {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const currentUser = await getCurrentUser();
+        const currentUser = await getCurrentUserSafe();
         setUser(currentUser);
       } catch (error) {
-        navigate(createPageUrl("Login"));
+        console.error("Error loading user:", error);
       }
     };
     loadUser();
