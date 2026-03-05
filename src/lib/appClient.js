@@ -179,3 +179,29 @@ export async function upsertAIDayProgress(payload) {
 
   if (error) throw error;
 }
+
+/**
+ * Admin: list all AI course day progress rows (all users)
+ */
+export async function listAllAIDayProgress() {
+  const { data, error } = await supabase
+    .from(TABLES.aiCourseDayProgress)
+    .select("*")
+    .order("user_email", { ascending: true });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+/**
+ * Get all AI day progress rows for a single user
+ */
+export async function getAllAIDayProgressForUser(user_email) {
+  const { data, error } = await supabase
+    .from(TABLES.aiCourseDayProgress)
+    .select("*")
+    .eq("user_email", user_email);
+
+  if (error) throw error;
+  return data ?? [];
+}

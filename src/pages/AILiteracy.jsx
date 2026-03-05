@@ -5,7 +5,7 @@
 // - Progress tracking works for logged-in users only
 
 import React, { useState, useEffect } from "react";
-import { dataClient } from "@/api/dataClient";
+import { getCurrentUserSafe, getAllAIDayProgressForUser } from "@/lib/appClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -21,41 +21,32 @@ import {
 export default function AILiteracy() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
   const queryClient = useQueryClient();
 
-  // ✅ FIXED: Safe auth check - does not throw or redirect
   useEffect(() => {
     const loadUser = async () => {
       try {
-        // Use getCurrentUser() which returns guest user if not logged in
-        const currentUser = await dataClient.auth.getCurrentUser();
-        setUser(currentUser);
+        const currentUser = await getCurrentUserSafe();
+        // null means unauthenticated — treat as guest
+        setUser(currentUser ?? { id: "guest", email: "guest@example.com", full_name: "Guest User", isGuest: true });
       } catch (error) {
         console.error("Error loading user:", error);
-        // Set guest user instead of redirecting
-        setUser({
-          id: "guest",
-          email: "guest@example.com",
-          full_name: "Guest User",
-          isGuest: true,
-        });
+        setUser({ id: "guest", email: "guest@example.com", full_name: "Guest User", isGuest: true });
+      } finally {
+        setIsLoadingUser(false);
       }
     };
     loadUser();
   }, []);
 
-  const { data: course } = useQuery({
-    queryKey: ['aiCourse'],
-    queryFn: async () => {
-      const courses = await dataClient.entities.Course.list();
-      return courses.find(c => c.name === "AI Literacy: Using AI Responsibly and Effectively");
-    }
-  });
+  // Course metadata is static - no need to fetch from DB
+  const course = { id: "course_ai_literacy", name: "AI Literacy: Using AI Responsibly and Effectively" };
 
-  // ✅ Only fetch progress if user is logged in (not guest)
+  // Fetch progress from Supabase for logged-in users
   const { data: dayProgress = [] } = useQuery({
     queryKey: ['aiDayProgress', user?.email],
-    queryFn: () => dataClient.entities.AICourseDayProgress.filter({ user_email: user?.email }),
+    queryFn: () => getAllAIDayProgressForUser(user.email),
     enabled: !!user && !user.isGuest
   });
 
@@ -143,7 +134,7 @@ export default function AILiteracy() {
   const progressPercent = (completedDays / 10) * 100;
 
   // ✅ Don't show loading spinner - render immediately with what we have
-  if (!user || !course) {
+  if (isLoadingUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-white to-pink-50">
         <div className="text-center">

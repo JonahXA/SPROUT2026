@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getCurrentUserSafe } from "@/lib/appClient";
-import { dataClient } from "@/api/dataClient";
+import { getCurrentUserSafe, upsertAIDayProgress, getAIDayProgress } from "@/lib/appClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -36,38 +35,22 @@ export default function AIDay4() {
 
   const { data: dayProgress } = useQuery({
     queryKey: ["aiDayProgress", user?.email, 4],
-    queryFn: async () => {
-      const progress = await dataClient.entities.AICourseDayProgress.filter({
-        user_email: user?.email,
-        day_number: 4,
-      });
-      return progress[0];
-    },
+    queryFn: async () => getAIDayProgress({ user_email: user?.email, day_number: 4 }),
     enabled: !!user,
   });
 
   const completeDayMutation = useMutation({
     mutationFn: async (quizScore) => {
       if (!user?.email) throw new Error("Missing user");
-      if (dayProgress) {
-        await dataClient.entities.AICourseDayProgress.update(dayProgress.id, {
-          completed: true,
-          completed_date: new Date().toISOString(),
-          activity_completed: true,
-          quiz_score: quizScore,
-          time_spent_minutes: 60,
-        });
-      } else {
-        await dataClient.entities.AICourseDayProgress.create({
-          user_email: user.email,
-          day_number: 4,
-          completed: true,
-          completed_date: new Date().toISOString(),
-          activity_completed: true,
-          quiz_score: quizScore,
-          time_spent_minutes: 60,
-        });
-      }
+      await upsertAIDayProgress({
+        user_email: user.email,
+        day_number: 4,
+        completed: true,
+        completed_date: new Date().toISOString(),
+        activity_completed: true,
+        quiz_score: quizScore,
+        time_spent_minutes: 60,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["aiDayProgress"]);
